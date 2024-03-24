@@ -1,0 +1,114 @@
+
+    print('data in list_11')
+    for data in list_1:
+        print(data.date, data.price_spy, data.price_govt)
+        
+    print('data in list_22')
+    for data in list_2:
+        print(data.date, data.price_spy, data.price_govt)
+        
+    print('data in list_33')
+    for data in list_3:
+        print(data.date, data.price_spy, data.price_govt)
+    
+    
+    import numpy as np;
+from openpyxl import load_workbook;
+from openpyxl import Workbook;
+from openpyxl.styles import numbers;
+from datetime import datetime;
+
+class RawData:
+    def __init__(self, date, price_spy, price_govt):
+        self.date = date
+        self.price_spy = price_spy
+        self.price_govt = price_govt
+
+class PortfolioValue:
+    def __init__(self, portfolio_value):
+        self.portofolio_value = portfolio_value
+
+
+def read_data_from_xl(file_path):
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+    data_list = []
+    
+    for row in sheet.iter_rows(min_row = 3, values_only = True):
+        date, price_spy, price_govt = row[1], row[2], row[3]
+        date_formatted = date.strftime("%Y-%m-%d")
+        data = RawData(date_formatted, price_spy, price_govt)  
+        data_list.append(data) 
+        # print(row[1], row[2], row[3], sep='')
+    
+    # for data in data_list:
+    #     print(data.date, data.price_spy, data.price_govt)
+    
+    return data_list
+
+def get_row_data(data, index, shares_spy, shares_govt):
+    p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+    if index == 0:
+        return [data.date, round(data.price_spy, 2), round(data.price_govt, 2), round(p_val, 2), round(shares_spy, 2), round(shares_govt, 2)]
+    else:
+        return [data.date, round(data.price_spy, 2), round(data.price_govt, 2), round(p_val, 2), '', '']
+        
+    
+def construct_portfolio(weight_spy, weight_govt, init_capital, equity_bond_ratio):
+    data_list = read_data_from_xl('data\CMSC 5718 assignment 3 data.xlsx')
+    
+    init_price_spy = data_list[0].price_spy
+    init_price_govt = data_list[0].price_govt
+    
+    end_date_2021 = '2021-12-31'
+    end_date_2022 = '2022-12-30'
+    end_date_2023 = '2023-12-29'
+    
+    # split data_list by year
+    list_1, list_2, list_3 = [], [], []
+    for data in data_list:
+        if datetime.strptime(data.date, "%Y-%m-%d").date() <= datetime.strptime(end_date_2021, "%Y-%m-%d").date():
+            list_1.append(data)
+        elif datetime.strptime(data.date, "%Y-%m-%d").date() <= datetime.strptime(end_date_2022, "%Y-%m-%d").date():
+            list_2.append(data)
+        else:
+            list_3.append(data)
+    
+    output_workbook = Workbook()
+    # remove the default sheet
+    output_workbook.remove(output_workbook.active)
+    sheet = output_workbook.create_sheet(title=equity_bond_ratio)
+    
+    sheet['A1'] = 'Date'
+    sheet['B1'] = 'SPY Price'
+    sheet['C1'] = 'GOVT Price'
+    sheet['D1'] = 'Daily Portfolio Value'
+    sheet['E1'] = 'Number of Shares (SPY)'
+    sheet['F1'] = 'Number of Shares (GOVT)'
+    
+    shares_spy = init_capital * weight_spy / init_price_spy
+    shares_govt = init_capital * weight_govt / init_price_govt
+    value_last = 0.0
+    
+    for index, data in enumerate(list_1):
+        p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+        sheet.append(get_row_data(data, index, shares_spy, shares_govt))
+        value_last = p_val
+    
+    # re-balancing
+    shares_spy = value_last * weight_spy / list_1[-1].price_spy
+    shares_govt = value_last * weight_govt / list_1[-1].price_govt
+    for index, data in enumerate(list_2):
+        p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+        sheet.append(get_row_data(data, index, shares_spy, shares_govt))
+        value_last = p_val
+        
+    # re-balancing
+    shares_spy = value_last * weight_spy / list_2[-1].price_spy
+    shares_govt = value_last * weight_govt / list_2[-1].price_govt
+    for index, data in enumerate(list_3):
+        p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+        sheet.append(get_row_data(data, index, shares_spy, shares_govt))
+
+    save_filepath = 'data\daily portfolio value.xlsx'
+    output_workbook.save(save_filepath)
