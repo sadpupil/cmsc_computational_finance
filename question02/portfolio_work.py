@@ -208,8 +208,12 @@ def calculate_risk_and_contribution(data_list):
         # calculate risk contribution ratio
         contribution_spy = share_spy ** 2 * corr_spy_spy ** 2 + share_spy * share_govt * corr_coeff * corr_spy_spy * corr_govt_govt
         contribution_govt = share_govt ** 2 * corr_govt_govt ** 2 + share_spy * share_govt * corr_coeff * corr_spy_spy * corr_govt_govt
-        contribution_ratio_spy = contribution_spy / protfolio_variance
-        contribution_ratio_govt = contribution_govt / protfolio_variance
+        
+        contribution_spy /= risk
+        contribution_govt /= risk
+                
+        contribution_ratio_spy = contribution_spy / risk
+        contribution_ratio_govt = contribution_govt / risk
         
         risk_contribution_ratio.append([round(contribution_ratio_spy * 100, 2), round(contribution_ratio_govt * 100, 2)])
         

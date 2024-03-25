@@ -1,6 +1,6 @@
-from workout_a import construct_portfolio
-from workout_a import calculate_return;
-from workout_a import calculate_risk_and_contribution;
+from portfolio_work import construct_portfolio
+from portfolio_work import calculate_return;
+from portfolio_work import calculate_risk_and_contribution;
 
 title = [    "      [spy-0% / govt-100%]: ", 
              "      [spy-10% / govt-90%]: ",
@@ -30,7 +30,7 @@ def solution_02():
         risk = portfolio_risk_list[index]
         contribution_ratio = risk_contribution_ratio_list[index]
         print(title[index], end = '')
-        print('return: ', rtn, '%', '; risk: ', risk, '; return/risk: ', round((rtn / risk), 2), sep = '')
+        print('return: ', rtn, '%', '; risk: ', risk, '%; return/risk: ', round((rtn / risk), 2), sep = '')
         spaces = ' ' * (len(title[index]) - 2)
         print(spaces, '-> ', 'risk contribution ratio of spy: ', contribution_ratio[0], '%, ', 'govt: ', contribution_ratio[1], '%', sep = '')
         
