@@ -76,7 +76,7 @@ def construct_ew_portfolio(initial_capital):
         
     return total_list, daily_value, number_of_shares
 
-def calculate_return_and_risk(daily_value):
+def calculate_ew_return_and_risk(daily_value):
     
     result_list = [[], [], []]
     
@@ -124,7 +124,7 @@ def calculate_covariance_matrix_elem(rtn_list_i, rtn_list_j, rtn_avg_i, rtn_avg_
     return ans / len(rtn_list_i)
     
 
-def calculate_risk_contribution_ratio(total_list):
+def calculate_ew_risk_contribution_ratio(total_list):
     # calculate by year
     # following the sequence of 2021 -> 2022 -> 2023
     result_list = []

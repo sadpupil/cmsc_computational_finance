@@ -112,3 +112,77 @@ def construct_portfolio(weight_spy, weight_govt, init_capital, equity_bond_ratio
 
     save_filepath = 'data\daily portfolio value.xlsx'
     output_workbook.save(save_filepath)
+    
+    
+def calculate_return(portfolio_value_pairs):
+    # the range of year is 3
+    n = 3
+    
+    portfolio_returns = []
+    
+    for values in portfolio_value_pairs:
+        # print(values)
+        start_value = values[0]
+        end_value = values[1]
+        rtn_value = (end_value - start_value) / start_value
+        annualized_rtn = ((1 + rtn_value) ** (1 / n) - 1) * 100
+        annualized_rtn = round(annualized_rtn, 2)
+        portfolio_returns.append(annualized_rtn)
+        # print('return: ', annualized_rtn, '%', sep='')
+    
+    return portfolio_returns
+
+# the function to calculated the risk of portfolio with daily value acquired in (a)
+def calculate_risk_dailyValue(daily_value_set):
+    
+    # print(daily_value)
+    
+    risk_list = []
+    
+    t = 252
+    for daily_value in daily_value_set:
+        rtn_list = []
+        pre_value = daily_value[0]
+        for index, value in enumerate(daily_value):
+            if index > 0:
+                ratio = value / pre_value
+                rtn_list.append(ratio - 1)
+            pre_value = value
+    
+        rtn_avg = sum(rtn_list) / len(rtn_list)
+        stan_dev = 0
+        for rtn in rtn_list:
+            stan_dev += (rtn - rtn_avg) ** 2
+    
+        stan_dev /= (len(rtn_list) - 1)
+    
+        portfolio_risk = math.sqrt(stan_dev) * math.sqrt(t)
+        risk_list.append(portfolio_risk)
+        
+    #print(len(risk_list))
+    return risk_list
+        
+def calculate_risk_and_contribution(data_list, daily_value_set):
+    
+    
+def solution_02():
+    price_value_list, number_of_shares = construct_portfolio(1000000)
+    portfolio_return_list = calculate_return(value_pairs)
+    portfolio_risk_list, risk_contribution_ratio_list = calculate_risk_and_contribution(data_list, daily_value_set)
+    
+    # calculate_risk_dailyValue(daily_value_set)
+    
+    print('-> no.of shares: ')
+    for index, elem in enumerate(number_of_shares):
+        print(title2[index], end = '')
+        print(elem[0], ', ', elem[2], ', ', elem[4], ', ', elem[1], ', ', elem[3], ', ', elem[5], sep = '')
+        
+    print('\n-> annualized portfolio risk and return, with risk contribution ratio: ')
+    for index, elem in enumerate(portfolio_return_list):
+        rtn = elem
+        risk = portfolio_risk_list[index]
+        contribution_ratio = risk_contribution_ratio_list[index]
+        print(title2[index], end = '')
+        print('return: ', rtn, '%', '; risk: ', risk, '%; return/risk: ', round((rtn / risk), 2), sep = '')
+        spaces = ' ' * (len(title2[index]) - 2)
+        print(spaces, '-> ', 'risk contribution ratio of spy: ', contribution_ratio[0], '%, ', 'govt: ', contribution_ratio[1], '%', sep = '')

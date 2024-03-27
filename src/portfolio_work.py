@@ -1,4 +1,5 @@
 import math;
+import numpy as np;
 from openpyxl import load_workbook;
 from openpyxl import Workbook;
 from datetime import datetime;
@@ -9,10 +10,13 @@ class RawData:
         self.price_spy = price_spy
         self.price_govt = price_govt
         self.price_gsg = price_gsg
-
-class PortfolioValue:
-    def __init__(self, portfolio_value):
-        self.portofolio_value = portfolio_value
+        
+class PortfolioData:
+    def __init__(self, date, price_spy, price_govt, daily_value):
+        self.date = date
+        self.price_spy = price_spy
+        self.price_govt = price_govt
+        self.daily_value = daily_value
 
 ratio = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
@@ -65,20 +69,12 @@ def construct_portfolio(init_capital):
     # remove the default sheet
     output_workbook.remove(output_workbook.active)
     
-    # with different equity/bond mix
-    # store the portfolio value on 2020/12/31 and the value on 2023/12/29
-    # for return and risk calculation
-    portfolio_value_pairs = []
-    
     # from 0%-100% to 100%-0%
     # store the no. of shares of spy and govt (2021, 2022, 2023)
     number_of_shares = []
     
-    # store the daliy value of portfolio
-    # for the calculation of portfolio annulaized standard deviation
-    daily_value_set = []
+    price_value_list = []
     
-    # ratio = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
     for r in ratio:
         sheet = output_workbook.create_sheet(str(r * 100) + '%' + '-' + str(100 - r * 100) + '%')
         sheet['A1'] = 'Date'
@@ -96,13 +92,13 @@ def construct_portfolio(init_capital):
         shares_list = []
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         
-        value_last = 0.0
+        price_value_container = []
         
-        daily_value = []
+        value_last = 0.0
     
         for index, data in enumerate(list_1):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
-            daily_value.append(p_val)
+            price_value_container.append(PortfolioData(data.date, data.price_spy, data.price_govt, p_val))
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
             value_last = p_val
     
@@ -112,7 +108,7 @@ def construct_portfolio(init_capital):
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         for index, data in enumerate(list_2):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
-            daily_value.append(p_val)
+            price_value_container.append(PortfolioData(data.date, data.price_spy, data.price_govt, p_val))
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
             value_last = p_val
         
@@ -122,72 +118,16 @@ def construct_portfolio(init_capital):
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         for index, data in enumerate(list_3):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
-            daily_value.append(p_val)
+            price_value_container.append(PortfolioData(data.date, data.price_spy, data.price_govt, p_val))
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
-            
-        value_start = sheet.cell(row=2, column=4).value
-        value_end = sheet.cell(row=sheet.max_row, column=4).value
-        # print('v1 = ', value_start, 'v2 = ', value_end)
-        portfolio_value_pairs.append([value_start, value_end])
         
         number_of_shares.append(shares_list)
-        
-        daily_value_set.append(daily_value)
+        price_value_list.append(price_value_container)
 
     save_filepath = 'result_data\daily portfolio value.xlsx'
     output_workbook.save(save_filepath)
     
-    return number_of_shares, portfolio_value_pairs, data_list, daily_value_set
-
-def calculate_return(portfolio_value_pairs):
-    # the range of year is 3
-    n = 3
-    
-    portfolio_returns = []
-    
-    for values in portfolio_value_pairs:
-        # print(values)
-        start_value = values[0]
-        end_value = values[1]
-        rtn_value = (end_value - start_value) / start_value
-        annualized_rtn = ((1 + rtn_value) ** (1 / n) - 1) * 100
-        annualized_rtn = round(annualized_rtn, 2)
-        portfolio_returns.append(annualized_rtn)
-        # print('return: ', annualized_rtn, '%', sep='')
-    
-    return portfolio_returns
-
-# the function to calculated the risk of portfolio with daily value acquired in (a)
-def calculate_risk_dailyValue(daily_value_set):
-    
-    # print(daily_value)
-    
-    risk_list = []
-    
-    t = 252
-    for daily_value in daily_value_set:
-        rtn_list = []
-        pre_value = daily_value[0]
-        for index, value in enumerate(daily_value):
-            if index > 0:
-                ratio = value / pre_value
-                rtn_list.append(ratio - 1)
-            pre_value = value
-    
-        rtn_avg = sum(rtn_list) / len(rtn_list)
-        stan_dev = 0
-        for rtn in rtn_list:
-            stan_dev += (rtn - rtn_avg) ** 2
-    
-        stan_dev /= (len(rtn_list) - 1)
-    
-        portfolio_risk = math.sqrt(stan_dev) * math.sqrt(t)
-        risk_list.append(portfolio_risk)
-        
-    #print(len(risk_list))
-    return risk_list
-        
-def calculate_risk_and_contribution(data_list, daily_value_set):
+    return price_value_list, number_of_shares
     
     portfolio_risk = calculate_risk_dailyValue(daily_value_set)
     risk_contribution_ratio = []
@@ -259,4 +199,117 @@ def calculate_risk_and_contribution(data_list, daily_value_set):
         
         risk_contribution_ratio.append([round(contribution_ratio_spy * 100, 2), round(contribution_ratio_govt * 100, 2)])
         
-    return portfolio_risk, risk_contribution_ratio    
+    return portfolio_risk, risk_contribution_ratio
+
+def calculate_return_and_risk(price_value_list):
+    # calculate return
+    rtn_list = []
+    for price_value in price_value_list:
+        start_price = price_value[0].daily_value
+        end_price = price_value[-1].daily_value
+        tmp = (end_price - start_price) / start_price
+        rtn_val = (1 + tmp) ** (1 / 3) - 1
+        rtn_list.append(rtn_val) 
+        # print(price_value[0], price_value[-1], sep='')
+    
+    # calculate annualized standard deviation
+    stan_dev_list = []
+    for price_value in price_value_list:
+        r = []
+        pre_value = price_value[0].daily_value
+        
+        for i, elem in enumerate(price_value):
+            if i > 0:
+                r.append(elem.daily_value / pre_value - 1)
+            pre_value = elem.daily_value
+        
+        avg_r = sum(r) / len(r)
+        # the standard deviation without annualization factor
+        sig = 0
+        for elem in r:
+            sig += (elem - avg_r) ** 2
+        sig /= (len(r) - 1)
+        sig = math.sqrt(sig)
+        
+        # multiply with the square root of 252
+        sig *= math.sqrt(252)
+        stan_dev_list.append(sig)
+        
+    return rtn_list, stan_dev_list
+
+# each element in the data list is a PortfolioData object
+def calculate_covariance_matric_elem(mark_1, mark_2, data_list):
+    rtn_list_1 = []
+    rtn_list_2 = []
+    
+    if mark_1 == 'spy':
+        pre = data_list[0].price_spy
+        for i, elem in enumerate(data_list):
+            if i > 0:
+                tmp = (elem.price_spy / pre) - 1
+                rtn_list_1.append(tmp)
+            pre = elem.price_spy
+    elif mark_1 == 'govt':
+        pre = data_list[0].price_govt
+        for i, elem in enumerate(data_list):
+            if i > 0:
+                tmp = (elem.price_govt / pre) - 1
+                rtn_list_1.append(tmp)
+            pre = elem.price_govt
+    
+    if mark_2 == 'spy':
+        pre = data_list[0].price_spy
+        for i, elem in enumerate(data_list):
+            if i > 0:
+                tmp = (elem.price_spy / pre) - 1
+                rtn_list_2.append(tmp)
+            pre = elem.price_spy
+    elif mark_2 == 'govt':
+        pre = data_list[0].price_govt
+        for i, elem in enumerate(data_list):
+            if i > 0:
+                tmp = (elem.price_govt / pre) - 1
+                rtn_list_2.append(tmp)
+            pre = elem.price_govt 
+            
+    avg_rtn_1 = sum(rtn_list_1) / len(rtn_list_1)
+    avg_rtn_2 = sum(rtn_list_2) / len(rtn_list_2)
+    
+    sig_1_2 = 0
+    for j, r in enumerate(rtn_list_1):
+        sig_1_2 += (rtn_list_1[j] - avg_rtn_1) * (rtn_list_2[j] - avg_rtn_2)
+    
+    # multiply annualized factor
+    sig_1_2 *= (252 / (len(rtn_list_1) - 1))
+    return sig_1_2
+
+def contribution_ratio(weight_spy, weight_govt, price_value):
+    w = np.array([
+        [weight_spy],
+        [weight_govt]
+    ])
+    
+    sig_1_1 = calculate_covariance_matric_elem('spy', 'spy', price_value)
+    sig_1_2 = calculate_covariance_matric_elem('spy', 'govt', price_value)
+    sig_2_1 = sig_1_2
+    sig_2_2 = calculate_covariance_matric_elem('govt', 'govt', price_value)
+    
+    covar_matrix = np.array([
+        [sig_1_1, sig_1_2],
+        [sig_2_1, sig_2_2]
+    ])
+    
+    MR = np.dot(covar_matrix, w)
+    print(MR)
+    sig_p_square = np.dot(np.dot(np.transpose(w), covar_matrix), w)
+    sig_p = math.sqrt(sig_p_square)
+    mr = [MR[0][0] / sig_p, MR[1][0] / sig_p]
+    tr = [mr[0] * weight_spy / sig_p, mr[1] * weight_govt / sig_p]
+    contribution_ratio = [round(tr[0] * 100, 2), round(tr[1] * 100, 2)]
+    return contribution_ratio
+
+def calculate_risk_contribution_ratio(price_value_list):
+    risk_contribution_ratio = []
+    for i, price_value in enumerate(price_value_list):
+        risk_contribution_ratio.append(contribution_ratio(ratio[i], 1 - ratio[i], price_value))
+    return risk_contribution_ratio
