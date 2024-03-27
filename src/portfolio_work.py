@@ -1,14 +1,14 @@
-import numpy as np;
 import math;
 from openpyxl import load_workbook;
 from openpyxl import Workbook;
 from datetime import datetime;
 
 class RawData:
-    def __init__(self, date, price_spy, price_govt):
+    def __init__(self, date, price_spy, price_govt, price_gsg):
         self.date = date
         self.price_spy = price_spy
         self.price_govt = price_govt
+        self.price_gsg = price_gsg
 
 class PortfolioValue:
     def __init__(self, portfolio_value):
@@ -22,9 +22,9 @@ def read_data_from_xl(file_path):
     data_list = []
     
     for row in sheet.iter_rows(min_row = 3, values_only = True):
-        date, price_spy, price_govt = row[1], row[2], row[3]
+        date, price_spy, price_govt, price_gsg = row[1], row[2], row[3], row[4]
         date_formatted = date.strftime("%Y-%m-%d")
-        data = RawData(date_formatted, price_spy, price_govt)  
+        data = RawData(date_formatted, price_spy, price_govt, price_gsg)  
         data_list.append(data) 
         # print(row[1], row[2], row[3], sep='')
     
@@ -74,6 +74,10 @@ def construct_portfolio(init_capital):
     # store the no. of shares of spy and govt (2021, 2022, 2023)
     number_of_shares = []
     
+    # store the daliy value of portfolio
+    # for the calculation of portfolio annulaized standard deviation
+    daily_value_set = []
+    
     # ratio = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
     for r in ratio:
         sheet = output_workbook.create_sheet(str(r * 100) + '%' + '-' + str(100 - r * 100) + '%')
@@ -93,9 +97,12 @@ def construct_portfolio(init_capital):
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         
         value_last = 0.0
+        
+        daily_value = []
     
         for index, data in enumerate(list_1):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+            daily_value.append(p_val)
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
             value_last = p_val
     
@@ -105,6 +112,7 @@ def construct_portfolio(init_capital):
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         for index, data in enumerate(list_2):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+            daily_value.append(p_val)
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
             value_last = p_val
         
@@ -114,6 +122,7 @@ def construct_portfolio(init_capital):
         shares_list.extend([round(shares_spy, 2), round(shares_govt, 2)])
         for index, data in enumerate(list_3):
             p_val = shares_spy * data.price_spy + shares_govt * data.price_govt
+            daily_value.append(p_val)
             sheet.append(get_row_data(data, index, shares_spy, shares_govt))
             
         value_start = sheet.cell(row=2, column=4).value
@@ -122,11 +131,13 @@ def construct_portfolio(init_capital):
         portfolio_value_pairs.append([value_start, value_end])
         
         number_of_shares.append(shares_list)
+        
+        daily_value_set.append(daily_value)
 
     save_filepath = 'data\daily portfolio value.xlsx'
     output_workbook.save(save_filepath)
     
-    return number_of_shares, portfolio_value_pairs, data_list
+    return number_of_shares, portfolio_value_pairs, data_list, daily_value_set
 
 def calculate_return(portfolio_value_pairs):
     # the range of year is 3
@@ -145,13 +156,43 @@ def calculate_return(portfolio_value_pairs):
         # print('return: ', annualized_rtn, '%', sep='')
     
     return portfolio_returns
-        
-def calculate_risk_and_contribution(data_list):
+
+# the function to calculated the risk of portfolio with daily value acquired in (a)
+def calculate_risk_dailyValue(daily_value_set):
     
-    portfolio_risk = []
+    # print(daily_value)
+    
+    risk_list = []
+    
+    t = 252
+    for daily_value in daily_value_set:
+        rtn_list = []
+        pre_value = daily_value[0]
+        for index, value in enumerate(daily_value):
+            if index > 0:
+                ratio = value / pre_value
+                rtn_list.append(ratio - 1)
+            pre_value = value
+    
+        rtn_avg = sum(rtn_list) / len(rtn_list)
+        stan_dev = 0
+        for rtn in rtn_list:
+            stan_dev += (rtn - rtn_avg) ** 2
+    
+        stan_dev /= (len(rtn_list) - 1)
+    
+        portfolio_risk = math.sqrt(stan_dev) * math.sqrt(t)
+        risk_list.append(portfolio_risk)
+        
+    #print(len(risk_list))
+    return risk_list
+        
+def calculate_risk_and_contribution(data_list, daily_value_set):
+    
+    portfolio_risk = calculate_risk_dailyValue(daily_value_set)
     risk_contribution_ratio = []
     
-    for r in ratio:
+    for j, r in enumerate(ratio):
         t = 252
         share_spy = r
         share_govt = 1 - r
@@ -200,10 +241,11 @@ def calculate_risk_and_contribution(data_list):
     
         corr_coeff = corr_spy_govt / (corr_spy_spy * corr_govt_govt)
     
-        protfolio_variance = share_spy ** 2 * corr_spy_spy ** 2 + share_govt ** 2 * corr_govt_govt ** 2 + 2 * corr_coeff * share_spy * share_govt * corr_spy_spy * corr_govt_govt
-        risk = math.sqrt(protfolio_variance)
-        # print(portfolio_risk)
-        portfolio_risk.append(round(risk  * 100, 2))
+        # protfolio_variance = share_spy ** 2 * corr_spy_spy ** 2 + share_govt ** 2 * corr_govt_govt ** 2 + 2 * corr_coeff * share_spy * share_govt * corr_spy_spy * corr_govt_govt
+        # risk = math.sqrt(protfolio_variance)
+        risk = portfolio_risk[j]
+        # portfolio_risk.append(round(risk * 100, 2))
+        portfolio_risk[j] = round(risk * 100, 2)
         
         # calculate risk contribution ratio
         contribution_spy = share_spy ** 2 * corr_spy_spy ** 2 + share_spy * share_govt * corr_coeff * corr_spy_spy * corr_govt_govt
@@ -217,5 +259,4 @@ def calculate_risk_and_contribution(data_list):
         
         risk_contribution_ratio.append([round(contribution_ratio_spy * 100, 2), round(contribution_ratio_govt * 100, 2)])
         
-    return portfolio_risk, risk_contribution_ratio
-        
+    return portfolio_risk, risk_contribution_ratio    
