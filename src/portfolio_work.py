@@ -42,7 +42,7 @@ def get_row_data(data, index, shares_spy, shares_govt):
         
     
 def construct_portfolio(init_capital):
-    data_list = read_data_from_xl('data\CMSC 5718 assignment 3 data.xlsx')
+    data_list = read_data_from_xl('src_data\CMSC 5718 assignment 3 data.xlsx')
     
     init_price_spy = data_list[0].price_spy
     init_price_govt = data_list[0].price_govt
@@ -134,7 +134,7 @@ def construct_portfolio(init_capital):
         
         daily_value_set.append(daily_value)
 
-    save_filepath = 'data\daily portfolio value.xlsx'
+    save_filepath = 'result_data\daily portfolio value.xlsx'
     output_workbook.save(save_filepath)
     
     return number_of_shares, portfolio_value_pairs, data_list, daily_value_set

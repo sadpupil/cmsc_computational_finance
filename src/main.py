@@ -48,14 +48,19 @@ def solution_02():
         spaces = ' ' * (len(title2[index]) - 2)
         print(spaces, '-> ', 'risk contribution ratio of spy: ', contribution_ratio[0], '%, ', 'govt: ', contribution_ratio[1], '%', sep = '')
         
-def solution_03():
+def solution_03_a():
     # total list contains the everyday price of each asset
     # it's a 2D array, each row contains the prices of assets of a praticular year
-    total_list, daily_value = construct_ew_portfolio(1000000)
+    total_list, daily_value, number_of_shares = construct_ew_portfolio(1000000)
     return_risk_list = calculate_return_and_risk(daily_value)
     risk_contribution_list = calculate_risk_contribution_ratio(total_list)
     
-    print('-> [return], [standard deviation of return] and [return/risk ratio]')
+    print('-> no.of shares: ')
+    for index, elem in enumerate(number_of_shares):
+        print(title3[index], end = '')
+        print('[spy]', elem[0], ', [govt]', elem[1], ', [gsg]', elem[2], sep = '')
+    
+    print('\n-> [return], [standard deviation of return] and [return/risk ratio]')
     for index, elem in enumerate(return_risk_list):
         print(title3[index], end = '')
         print(elem[0], '%, ', elem[1], '%, ', elem[2], sep = '')
@@ -69,4 +74,5 @@ if __name__ == "__main__":
     if mark == 2:
         solution_02()
     if mark == 3:
-        solution_03()
+        solution_02()
+        solution_03_a()

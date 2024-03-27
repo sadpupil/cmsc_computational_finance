@@ -17,7 +17,7 @@ def get_row_data(data, index, shares_spy, shares_govt, shares_gsg):
         return [data.date, round(data.price_spy, 2), round(data.price_govt, 2), round(data.price_gsg, 2), round(p_val, 2), '', '']
 
 def construct_ew_portfolio(initial_capital):
-    data_list = read_data_from_xl('data\CMSC 5718 assignment 3 data.xlsx')
+    data_list = read_data_from_xl('src_data\CMSC 5718 assignment 3 data.xlsx')
     
     end_date_2021 = '2021-12-31'
     end_date_2022 = '2022-12-30'
@@ -37,6 +37,7 @@ def construct_ew_portfolio(initial_capital):
     total_list.extend([list_1, list_2, list_3])
     
     daily_value = [[], [], []]
+    number_of_shares = []
     
     output_workbook = Workbook()
     # remove the default sheet
@@ -62,16 +63,18 @@ def construct_ew_portfolio(initial_capital):
         shares_govt = initial_capital * weight_govt / init_price_govt
         shares_gsg = initial_capital * weight_gsg / init_price_gsg
         
+        number_of_shares.append([round(shares_spy, 2), round(shares_govt, 2), round(shares_gsg, 2)])
+        
         for j, data in enumerate(list):
             # daily value of the portfolio
             val = shares_spy * data.price_spy + shares_govt * data.price_govt + shares_gsg * data.price_gsg
             daily_value[index].append(val)
             sheet.append(get_row_data(data, j, shares_spy, shares_govt, shares_gsg))
             
-    save_filepath = 'data\equal weight portfolio value.xlsx'
-    # output_workbook.save(save_filepath)
+    save_filepath = 'result_data\equal weight portfolio value.xlsx'
+    output_workbook.save(save_filepath)
         
-    return total_list, daily_value
+    return total_list, daily_value, number_of_shares
 
 def calculate_return_and_risk(daily_value):
     
