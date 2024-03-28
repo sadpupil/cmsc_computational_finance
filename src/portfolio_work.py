@@ -300,7 +300,6 @@ def contribution_ratio(weight_spy, weight_govt, price_value):
     ])
     
     MR = np.dot(covar_matrix, w)
-    print(MR)
     sig_p_square = np.dot(np.dot(np.transpose(w), covar_matrix), w)
     sig_p = math.sqrt(sig_p_square)
     mr = [MR[0][0] / sig_p, MR[1][0] / sig_p]

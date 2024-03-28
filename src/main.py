@@ -28,7 +28,11 @@ title3 = [
 
 def solution_02():
     price_value_list, number_of_shares = construct_portfolio(1000000)
+    
+    # the parameter price_value_list is a list which contains: 
+    # the daily price of spy, govt and the portfolio value accordingly
     rtn_list, stand_dev_list = calculate_return_and_risk(price_value_list)
+    
     contribution_ratio = calculate_risk_contribution_ratio(price_value_list)
     
     print('-> no.of shares: ')
@@ -36,7 +40,7 @@ def solution_02():
         print(title2[index], end = '')
         print(elem[0], ', ', elem[2], ', ', elem[4], ', ', elem[1], ', ', elem[3], ', ', elem[5], sep = '')
         
-    print('\n-> annualized portfolio risk and return, with risk contribution ratio: ')
+    print('\n-> annualized portfolio standard deviations and returns, with risk contribution ratio: ')
     for index, elem in enumerate(rtn_list):
         rtn = elem
         risk = stand_dev_list[index]
@@ -71,5 +75,4 @@ if __name__ == "__main__":
     if mark == 2:
         solution_02()
     if mark == 3:
-        # solution_02()
         solution_03_a()
