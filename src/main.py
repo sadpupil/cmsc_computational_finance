@@ -7,6 +7,7 @@ from ew_portfolio_work import calculate_ew_risk_contribution_ratio;
 from erc_portfolio_work import calculate_stddev_correlation;
 from erc_portfolio_work import calculate_number_of_shares;
 from erc_portfolio_work import calculate_portfolio_std_dev;
+from comparison_portfolio_work import calculate_cmp_return_stddev;
 
 # change this value to perform the calculation of different questions
 mark = 3
@@ -41,8 +42,10 @@ title3_b_1 = [
     "       govt - gsg: "
 ]
 
+initial_capital = 1000000
+
 def solution_02():
-    price_value_list, number_of_shares = construct_portfolio(1000000)
+    price_value_list, number_of_shares = construct_portfolio(initial_capital)
     
     # the parameter price_value_list is a list which contains: 
     # the daily price of spy, govt and the portfolio value accordingly
@@ -66,9 +69,10 @@ def solution_02():
 
 def solution_03_a():
     portfolio_data_2022 = []
+    portfolio_data_2023 = []
     # total list contains the everyday price of each asset
     # it's a 2D array, each row contains the prices of assets of a praticular year
-    total_list, daily_value, number_of_shares, portfolio_data_2022 = construct_ew_portfolio(1000000)
+    total_list, daily_value, number_of_shares, portfolio_data_2022, portfolio_data_2023 = construct_ew_portfolio(initial_capital)
     return_risk_list = calculate_ew_return_and_risk(daily_value)
     risk_contribution_list = calculate_ew_risk_contribution_ratio(total_list)
     
@@ -88,12 +92,12 @@ def solution_03_a():
         print(title3[index], end = '')
         print(elem[0], '%, ', elem[1], '%, ', elem[2], '%', sep = '')
     
-    return portfolio_data_2022
+    return portfolio_data_2022, portfolio_data_2023
 
 def solution_03_b(portfolio_data_2022):
     weights = [0.187, 0.66, 0.153]
     std_dev_rtn, corr_coeff_matrix, covar_matrix = calculate_stddev_correlation(portfolio_data_2022)
-    shares_list = calculate_number_of_shares(portfolio_data_2022, weights, 1000000)
+    shares_list = calculate_number_of_shares(portfolio_data_2022, weights, initial_capital)
     portfolio_std_dev = calculate_portfolio_std_dev([[0.187],[0.66],[0.153]], covar_matrix)
     
     print('\nAnswers for (b)', end='')
@@ -122,10 +126,18 @@ def solution_03_b(portfolio_data_2022):
         
     print('\n-> Portfolio standard deviation:')
     print('      ', round(portfolio_std_dev, 4), sep='')
+    
+def solution_03_c(portfolio_data_2023):
+    weights = [0.187, 0.66, 0.153]
+    rtn, std_dev, ratio = calculate_cmp_return_stddev(initial_capital, weights, portfolio_data_2023)
+    print('\nAnswers for (c)', end='')
+    print('\n-> [return], [standard deviation of return] and [return/risk ratio]')
+    print('      ', round((rtn * 100), 2), '%, ', round((std_dev * 100), 2), '%, ', round(ratio, 2), sep = '')
         
 if __name__ == "__main__":
     if mark == 2:
         solution_02()
     if mark == 3:
-        portfolio_data_2022 = solution_03_a()
+        portfolio_data_2022, portfolio_data_2023 = solution_03_a()
         solution_03_b(portfolio_data_2022)
+        solution_03_c(portfolio_data_2023)

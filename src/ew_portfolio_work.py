@@ -75,7 +75,7 @@ def construct_ew_portfolio(initial_capital):
     output_workbook.save(save_filepath)
     
     # return list_2 to be question 3-b's input    
-    return total_list, daily_value, number_of_shares, list_2
+    return total_list, daily_value, number_of_shares, list_2, list_3
 
 def calculate_ew_return_and_risk(daily_value):
     
