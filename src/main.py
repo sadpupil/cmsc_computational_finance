@@ -4,9 +4,12 @@ from portfolio_work import calculate_risk_contribution_ratio;
 from ew_portfolio_work import construct_ew_portfolio;
 from ew_portfolio_work import calculate_ew_return_and_risk;
 from ew_portfolio_work import calculate_ew_risk_contribution_ratio;
+from erc_portfolio_work import calculate_stddev_correlation;
+from erc_portfolio_work import calculate_number_of_shares;
+from erc_portfolio_work import calculate_portfolio_std_dev;
 
 # change this value to perform the calculation of different questions
-mark = 2
+mark = 3
 
 title2 = [    "      [spy-0% / govt-100%]: ", 
              "      [spy-10% / govt-90%]: ",
@@ -24,6 +27,18 @@ title3 = [
     "       year 2021: ",
     "       year 2022: ",
     "       year 2023: "
+]
+
+title3_b = [
+    "       spy: ",
+    "       govt: ",
+    "       gsg: "
+]
+
+title3_b_1 = [
+    "       spy - govt: ",
+    "       spy - gsg: ",
+    "       govt - gsg: "
 ]
 
 def solution_02():
@@ -48,15 +63,17 @@ def solution_02():
         print('return: ', round(rtn * 100, 2), '%', '; risk: ', round(risk * 100, 2), '%; return/risk: ', round((rtn / risk), 2), sep = '')
         spaces = ' ' * (len(title2[index]) - 2)
         print(spaces, '-> ', 'risk contribution ratio of spy: ', contribution_ratio[index][0], '%, ', 'govt: ', contribution_ratio[index][1], '%', sep = '')
-        
+
 def solution_03_a():
+    portfolio_data_2022 = []
     # total list contains the everyday price of each asset
     # it's a 2D array, each row contains the prices of assets of a praticular year
-    total_list, daily_value, number_of_shares = construct_ew_portfolio(1000000)
+    total_list, daily_value, number_of_shares, portfolio_data_2022 = construct_ew_portfolio(1000000)
     return_risk_list = calculate_ew_return_and_risk(daily_value)
     risk_contribution_list = calculate_ew_risk_contribution_ratio(total_list)
     
-    print('-> no.of shares: ')
+    print('Answers for (a)', end='')
+    print('\n-> no.of shares: ')
     for index, elem in enumerate(number_of_shares):
         print(title3[index], end = '')
         print('[spy]', elem[0], ', [govt]', elem[1], ', [gsg]', elem[2], sep = '')
@@ -70,9 +87,45 @@ def solution_03_a():
     for index, elem in enumerate(risk_contribution_list):
         print(title3[index], end = '')
         print(elem[0], '%, ', elem[1], '%, ', elem[2], '%', sep = '')
+    
+    return portfolio_data_2022
+
+def solution_03_b(portfolio_data_2022):
+    weights = [0.187, 0.66, 0.153]
+    std_dev_rtn, corr_coeff_matrix, covar_matrix = calculate_stddev_correlation(portfolio_data_2022)
+    shares_list = calculate_number_of_shares(portfolio_data_2022, weights, 1000000)
+    portfolio_std_dev = calculate_portfolio_std_dev([[0.187],[0.66],[0.153]], covar_matrix)
+    
+    print('\nAnswers for (b)', end='')
+    print('\n-> annualized standard deviations of returns: ')
+    for i, elem in enumerate(std_dev_rtn):
+        print(title3_b[i], end = '')
+        print(round(elem, 4))
+    
+    print('\n-> correlation coefficients between each pair of assets: ')
+    for i in range(len(corr_coeff_matrix)):
+        print('      ', end='')
+        for j in range(len(corr_coeff_matrix[0])):
+            print(round(corr_coeff_matrix[i][j], 4), ', ', sep='', end = '')
+        print('\n')
+        
+    print('\n-> covariance matrix: ')
+    for i in range(len(covar_matrix)):
+        print('      ', end='')
+        for j in range(len(covar_matrix[0])):
+            print(round(covar_matrix[i][j], 8), ', ', sep='', end = '')
+        
+    print('\n-> no.of shares: ')
+    for index, elem in enumerate(shares_list):
+        print(title3_b[index], end = '')
+        print(round(elem, 2))
+        
+    print('\n-> Portfolio standard deviation:')
+    print('      ', round(portfolio_std_dev, 4), sep='')
         
 if __name__ == "__main__":
     if mark == 2:
         solution_02()
     if mark == 3:
-        solution_03_a()
+        portfolio_data_2022 = solution_03_a()
+        solution_03_b(portfolio_data_2022)

@@ -73,8 +73,9 @@ def construct_ew_portfolio(initial_capital):
             
     save_filepath = 'result_data\equal weight portfolio value.xlsx'
     output_workbook.save(save_filepath)
-        
-    return total_list, daily_value, number_of_shares
+    
+    # return list_2 to be question 3-b's input    
+    return total_list, daily_value, number_of_shares, list_2
 
 def calculate_ew_return_and_risk(daily_value):
     
@@ -104,7 +105,8 @@ def calculate_ew_return_and_risk(daily_value):
             portfolio_stand_dev += (r - avg_return) ** 2
         
         portfolio_stand_dev /= (len(rtn_list) - 1)
-        portfolio_stand_dev = math.sqrt(portfolio_stand_dev)
+        # portfolio_stand_dev = math.sqrt(portfolio_stand_dev)
+        portfolio_stand_dev = math.sqrt(portfolio_stand_dev) * math.sqrt(252)
         
         ratio = portfolio_return / portfolio_stand_dev
         
@@ -121,7 +123,10 @@ def calculate_covariance_matrix_elem(rtn_list_i, rtn_list_j, rtn_avg_i, rtn_avg_
         rtn_value_i = rtn_list_i[k]
         rtn_value_j = rtn_list_j[k]
         ans += ((rtn_value_i - rtn_avg_i) * (rtn_value_j - rtn_avg_j))
-    return ans / len(rtn_list_i)
+    
+    ans *= (252 / (len(rtn_list_i) - 1))
+    # return ans / len(rtn_list_i)
+    return ans
     
 
 def calculate_ew_risk_contribution_ratio(total_list):
@@ -171,6 +176,8 @@ def calculate_ew_risk_contribution_ratio(total_list):
             [sig_2_1, sig_2_2, sig_2_3],
             [sig_3_1, sig_3_2, sig_3_3],
         ])
+        
+        # print(covar_matrix)
         
         w = np.array([
             [weight_spy], 
